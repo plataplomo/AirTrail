@@ -1,8 +1,8 @@
 export const platforms = [
   {
-    name: 'FlightRadar24',
+    name: 'FlightRadar24 / FlightDiary',
     value: 'fr24',
-    description: 'CSV export from MyFlightRadar24 settings.',
+    description: 'CSV export from FlightRadar24 or FlightDiary.',
     extensions: ['.csv'],
     options: {
       filterOwner: false,

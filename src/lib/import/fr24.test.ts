@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import flightDiaryFixture from './fixtures/flightdiary.csv?raw';
 import { processFR24File } from './fr24';
 
 const { getAirportByIcao, getAirlineByIcao, getAircraftByIcao } = vi.hoisted(
   () => ({
-    getAirportByIcao: vi.fn(async (icao: string) => ({
-      id: icao,
-      icao,
-      tz: 'UTC',
-    })),
+    getAirportByIcao: vi.fn(
+      async (
+        icao: string,
+      ): Promise<{ id: string; icao: string; tz: string } | null> => ({
+        id: icao,
+        icao,
+        tz: 'UTC',
+      }),
+    ),
     getAirlineByIcao: vi.fn(
       async (icao: string): Promise<{ id: string; icao: string } | null> => ({
         id: icao,
@@ -48,7 +53,48 @@ vi.mock('$lib/utils/data/aircraft', () => ({
 
 describe('processFR24File', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    getAirportByIcao.mockImplementation(async (icao: string) => ({
+      id: icao,
+      icao,
+      tz: 'UTC',
+    }));
+    getAirlineByIcao.mockImplementation(async (icao: string) => ({
+      id: icao,
+      icao,
+    }));
+    getAircraftByIcao.mockImplementation(async (icao: string) => ({
+      id: icao,
+      icao,
+    }));
+  });
+
+  it('imports a FlightDiary CSV through the FR24-compatible parser', async () => {
+    getAirportByIcao.mockImplementation(async (icao: string) =>
+      icao === 'XXXX' ? null : { id: icao, icao, tz: 'UTC' },
+    );
+    getAirlineByIcao.mockImplementation(async (icao: string) =>
+      icao === 'ZZZ' ? null : { id: icao, icao },
+    );
+
+    const result = await processFR24File(flightDiaryFixture, {
+      filterOwner: false,
+      airlineFromFlightNumber: true,
+      importMode: 'personal',
+    });
+
+    expect(result.flights).toHaveLength(3);
+    expect(result.skippedRows).toBe(0);
+    expect(result.flights[2]).toMatchObject({
+      date: '2024-12-29',
+      flightNumber: 'ZZ999',
+      from: null,
+      to: { icao: 'YYYY' },
+      duration: 3720,
+      airline: null,
+    });
+    expect(result.unknowns.airports).toEqual({ XXXX: [2] });
+    expect(result.unknowns.airlines).toEqual({ ZZZ: [2] });
   });
 
   it('imports month-only FR24 dates as month precision', async () => {
