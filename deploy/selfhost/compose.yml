@@ -1,0 +1,76 @@
+name: airtrail
+
+services:
+  uploads-init:
+    image: alpine:3.22
+    restart: "no"
+    user: "0:0"
+    command: ["sh", "-c", "chown 1000:1000 /uploads"]
+    volumes:
+      - uploads:/uploads
+    network_mode: none
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - database
+
+  airtrail:
+    image: johly/airtrail:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    expose:
+      - "3000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      uploads-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    networks:
+      - database
+      - web
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "443:443/tcp"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      airtrail:
+        condition: service_healthy
+    networks:
+      - web
+
+networks:
+  database:
+    internal: true
+  web:
+
+volumes:
+  postgres-data:
+  uploads:
+  caddy-data:
+  caddy-config:

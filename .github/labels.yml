@@ -1,0 +1,28 @@
+labels:
+  - name: task
+    color: "7057ff"
+    description: Discrete implementation task
+  - name: enhancement
+    color: "a2eeef"
+    description: New capability
+  - name: documentation
+    color: "0075ca"
+    description: Docs
+  - name: deployment
+    color: "0e8a16"
+    description: Hetzner / Docker / DNS / backups
+  - name: import
+    color: "fef2c0"
+    description: Flight CSV import
+  - name: security
+    color: "b60205"
+    description: Secrets / exposure
+  - name: codex
+    color: "000000"
+    description: Suitable for a Codex run
+  - name: "priority: high"
+    color: "b60205"
+    description: Needs prompt attention
+  - name: "priority: medium"
+    color: "fbca04"
+    description: Important but not urgent
